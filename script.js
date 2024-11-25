@@ -7,21 +7,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const priceFilter = document.getElementById('price-filter');
     const flavorFilter = document.getElementById('flavor-filter');
     const menuItems = document.querySelectorAll('.menu .box');
+    const searchBtn = document.querySelector('#search-btn');
+    const cartBtn = document.querySelector('#cart-btn');
+    const wishlistBtn = document.querySelector('#wishlist-btn');
+    let wishlistContainer = document.querySelector('.wishlist-container');
 
+    
     applyFilterButton.addEventListener('click', filterItems);
 
-    document.querySelector('#search-btn').onclick = () => {
-        searchForm.classList.toggle('active');
-        navbar.classList.remove('active');
-        cartItem.classList.remove('active');
+    searchBtn.onclick = () => {
+        if (!searchForm.classList.contains('active')) {
+            searchForm.classList.add('active');
+            navbar.classList.remove('active');
+            cartItem.classList.remove('active');
+            wishlistContainer.classList.remove('active');
+        } else {
+            searchForm.classList.remove('active');
+        }
     };
+    wishlistBtn.onclick = () => {
+        if (!wishlistContainer.classList.contains('active')) {
+            wishlistContainer.classList.add('active');
+            navbar.classList.remove('active');
+            cartItem.classList.remove('active');
+            searchForm.classList.remove('active');
+        } else {
+            wishlistContainer.classList.remove('active');
+        }
+    };
+    
+    // Toggle the cart item container when clicking the cart button
+    cartBtn.onclick = () => {
+        if (!cartItem.classList.contains('active')) {
+            cartItem.classList.add('active');
+            navbar.classList.remove('active');
+            searchForm.classList.remove('active');
+            wishlistContainer.classList.remove('active');
+        } else {
+            cartItem.classList.remove('active');
+        }
+    };
+    
+    // Close the search form or cart item container when clicking outside of them
+    window.onclick = (event) => {
+        if (!searchForm.contains(event.target) && event.target !== searchBtn) {
+            searchForm.classList.remove('active');
+        }
+    
+        if (!cartItem.contains(event.target) && event.target !== cartBtn) {
+            cartItem.classList.remove('active');
+        }
+        if (!wishlistContainer.contains(event.target) && event.target !== wishlistBtn) {
+            wishlistContainer.classList.remove('active');
+        }
+    };
+    
 
-    document.querySelector('#cart-btn').onclick = () => {
-        cartItem.classList.toggle('active');
-        myOrderContainer.classList.remove('active');
-        navbar.classList.remove('active');
-        searchForm.classList.remove('active');
-    };
+    // document.querySelector('#cart-btn').onclick = () => {
+    //     cartItem.classList.toggle('active');
+    //     myOrderContainer.classList.remove('active');
+    //     navbar.classList.remove('active');
+    //     searchForm.classList.remove('active');
+    //     wishlistContainer.classList.remove('active');
+
+    // };
 
     document.querySelector('#my-order-btn').onclick = () => {
         myOrderContainer.classList.toggle('active');//Order container shown
@@ -49,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
         navbar.classList.remove('active');
         searchForm.classList.remove('active');
         cartItem.classList.remove('active');
+        wishlistContainer.classList.remove('active');
+
     };
     function filterItems() {
         const selectedPrice = priceFilter.value;
@@ -75,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Array to store cart items
-let cart = [];
+
 
 let wishlist = [];
 
@@ -114,17 +165,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+// Remove filter funtion 
+document.getElementById('remove-filter').addEventListener('click', function() {
+    // Reset filters
+    document.getElementById('price-filter').value = 'all';
+    document.getElementById('flavor-filter').value = '';
 
+    // Show all boxes
+    let boxes = document.querySelectorAll('.box');
+    boxes.forEach(box => {
+        box.style.display = 'block';
+    });
+});
 // Function to add items to cart
 
-let wishlistContainer = document.querySelector('.wishlist-container');
 
-document.querySelector('#wishlist-btn').onclick = () => {
-    wishlistContainer.classList.toggle('active');
-    navbar.classList.remove('active');
-    searchForm.classList.remove('active');
-    cartItem.classList.remove('active');
-};
 
 function addToWishlist(productName, price) {
     const existingItem = wishlist.find(item => item.name === productName);
@@ -163,21 +218,59 @@ function clearWishlist() {
     displayWishlist();
 }
 
+let quantities = {
+    'Nutty Butterscotch': 1,
+    'Berry Pops': 1,
+    'Cherry Sherbet Pops': 1,
+    'Dripping Vannila': 1,
+    'Very Berry Strawberry': 1,
+    'Rainbow Classic Cone': 1,
+    'Orange Pops': 1,
+    'Choco Hazel Pops': 1,
+    'Very Very Peachy': 1
+  };
+  
+  // Increase quantity
+  function increaseQuantity(itemId) {
+    quantities[itemId]++;
+    document.getElementById(`itemQuantity-${itemId}`).innerText = quantities[itemId];
+  }
+  
+  // Decrease quantity
+  function decreaseQuantity(itemId) {
+    if (quantities[itemId] > 1) {
+      quantities[itemId]--;
+      document.getElementById(`itemQuantity-${itemId}`).innerText = quantities[itemId];
+    }
+  }
 
 
+  function getCart() {
+    const cartString = localStorage.getItem('cart');
+    return cartString ? JSON.parse(cartString) : []; // Parse the JSON string or return an empty array
+}
 
- 
+// Function to save cart to localStorage
+function saveCart(cart) {
+    localStorage.setItem('cart', JSON.stringify(cart)); // Convert cart to JSON string and save
+}
+
+// Initialize cart from localStorage
+let cart = getCart();
+
 
 
 // Function to add items to the cart
-function addToCart(productName, price) {
+function addToCart(productName, price,imageUrl) {
     const existingItem = cart.find(item => item.name === productName);
     
-    if (!existingItem) {
+    if (existingItem) {
         // Add the product to the cart
-        cart.push({ name: productName, price: price });
-        alert(`Product ${productName} added to cart`); // Notify the user
+        cart.push({ name: productName, price: price,image: imageUrl });
+         // Notify the user
         displayCart(); // Update the cart display
+        
+        saveCart(cart); 
 
         // Show notification tooltip
         const notification = document.getElementById('notification-tooltip');
@@ -194,8 +287,13 @@ function addToCart(productName, price) {
             removeFromWishlist(wishlistIndex);
         }
     } else {
-        alert(`${productName} is already in your cart!`); // Alert if the item is already in the cart
+        cart.push({ name: productName, price: price,image:imageUrl });
+        // Notify the user
+        saveCart(cart); 
+       displayCart(); 
+      
     }
+    console.log(cart);
 }
 
 
@@ -203,47 +301,66 @@ function addToCart(productName, price) {
 
 // Function to remove items from the cart
 function removeFromCart(index) {
-    cart.splice(index, 1); // Remove item from cart array
+    
+    cart.splice(index, 1);
+    saveCart(cart);  // Remove item from cart array
     displayCart(); // Update the cart display
+    
 }
 
 // Function to display cart items and calculate total
-function displayCart() {
-    const cartItemsElement = document.getElementById('cartItems'); // Container for cart items
-    const totalElement = document.getElementById('total'); // Element for displaying total price
-    let cartItemsHTML = '';
-    let total = 0;
-
-    // Iterate through the cart array to build the HTML for each item
-    cart.forEach((item, index) => {
-        cartItemsHTML += `
-            <li>
-                ${item.name} - $${item.price.toFixed(2)}
-                <button onclick="removeFromCart(${index})">Remove</button>
-            </li>`;
-        total += item.price; // Accumulate total price
-    });
-
-    cartItemsElement.innerHTML = cartItemsHTML; // Insert the built HTML into the cart
-    totalElement.textContent = `Total: $${total.toFixed(2)}`; // Display the total
-}
-
 // Function to display cart items and calculate total
 function displayCart() {
-    const cartItemsElement = document.getElementById('cartItems');
-    const totalElement = document.getElementById('total');
-    let cartItemsHTML = '';
-    let total = 0;
+    const cart = JSON.parse(localStorage.getItem('cart')) || []; // Retrieve cart from localStorage
 
-    cart.forEach((item, index) => {
-        cartItemsHTML += `<li>${item.name} - $${item.price.toFixed(2)} <button onclick="removeFromCart(${index})">Remove</button></li>`;
-        total += item.price;
-    });
+    // Calculate the total number of items in the cart
+    const itemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
 
-    cartItemsElement.innerHTML = cartItemsHTML;
-    totalElement.textContent = `Total: $${total.toFixed(2)}`;
-    displayOrder();
+    // Update the cart count element
+    const cartCountElement = document.getElementById('cart-count'); // Element to show item count
+    cartCountElement.textContent = `(${itemCount})`;
+
+    console.log('Cart:', cart); // For debugging purposes
 }
+
+
+    // Optionally display an order summary or other elements
+    
+    window.onload = displayCart;
+
+
+
+// // Function to display cart items and calculate total
+// // Function to display cart items and calculate total
+// function displayCart() {
+//     const cartItemsElement = document.getElementById('cartItems');
+//     const totalElement = document.getElementById('total');
+//     const cartCountElement = document.getElementById('cart-count'); // Element to show item count
+//     let cartItemsHTML = '';
+//     let total = 0;
+
+//     // Count the number of items in the cart
+//     const itemCount = cart.length;
+
+//     cart.forEach((item, index) => {
+//         const quantity=quantities[item.name];
+//         cartItemsHTML += `<li>${item.name} - $${quantity*item.price.toFixed(2)} <button onclick="removeFromCart(${index})">Remove</button></li>`;
+//         total += item.price;
+//     });
+
+//     // Update cart items display
+//     cartItemsElement.innerHTML = cartItemsHTML;
+
+//     // Update total price display
+//     totalElement.textContent = `Total: $${total.toFixed(2)}`;
+
+//     // Update cart count display
+//     cartCountElement.textContent = `(${itemCount})`;
+
+//     // Optionally display an order summary or other elements
+//     displayOrder();
+// }
+
 
 // Function to simulate checkout
 // function checkout() {
@@ -435,6 +552,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let signupBtn = document.getElementById('signup-btn');
     let closeLogin = document.getElementById('close-login');
     let closeSignup = document.getElementById('close-signup');
+    const emailInput = document.querySelector('input[type="email"]');
+    const passwordInput = document.querySelector('input[type="password"]');
 
     // Show login modal
     loginBtn.onclick = () => {
@@ -450,6 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close login modal
     closeLogin.onclick = () => {
+          resetLoginForm();
         loginModal.style.display = 'none';
     };
 
@@ -457,6 +577,10 @@ document.addEventListener('DOMContentLoaded', () => {
     closeSignup.onclick = () => {
         signupModal.style.display = 'none';
     };
+    function resetLoginForm() {
+        emailInput.value = '';   
+        passwordInput.value = '';   
+      }
 
     // Close modal if clicked outside the modal content
     window.onclick = (event) => {
@@ -467,3 +591,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 });
+
+window.onscroll = function () {
+    const button = document.getElementById('backToTop');
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+        button.style.display = "block";
+    } else {
+        button.style.display = "none"; 
+    }
+};
+
+document.getElementById('backToTop').onclick = function () {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+};
